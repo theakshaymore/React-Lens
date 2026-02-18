@@ -1,0 +1,22 @@
+{
+  "name": "react-lens-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "React codebase health analyzer with CLI and web app",
+  "license": "MIT",
+  "packageManager": "pnpm@10.2.1",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --parallel --filter @react-lens/web-backend --filter @react-lens/web-frontend dev",
+    "dev:cli": "pnpm --filter react-lens dev",
+    "scan": "node packages/cli/dist/cli.js",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@react-lens/web-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter react-lens build && tsc -p tsconfig.json",
+    "dev": "pnpm --filter react-lens build && tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "lint": "echo 'lint not configured'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "nanoid": "^5.1.2",
+    "react-lens": "workspace:*",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.9",
+    "tsx": "^4.19.3",
+    "typescript": "^5.9.3"
+  }
+}
