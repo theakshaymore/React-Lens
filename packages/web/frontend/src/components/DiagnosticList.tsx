@@ -26,7 +26,7 @@ export function DiagnosticList({ diagnostics }: DiagnosticListProps): ReactEleme
     const key = `${diagnostic.filePath}:${diagnostic.line}:${diagnostic.rule}`;
     setActiveFix({ key, diagnostic, suggestion: null, loading: true, error: null });
     try {
-      const response = await fetch('/api/fix', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ diagnostic, code: diagnostic.snippet ?? '' }) });
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ diagnostic, code: diagnostic.snippet ?? '' }) });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? 'Fix generation failed');
       setActiveFix({ key, diagnostic, suggestion: payload.suggestion, loading: false, error: null });

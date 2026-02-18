@@ -22,7 +22,7 @@ export default function App(): ReactElement {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/share/${id}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/share/${id}`);
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? 'Failed to load share');
       setResult(payload.result);
@@ -46,7 +46,7 @@ export default function App(): ReactElement {
     setShareId(null);
     setLastPayload(payload);
     try {
-      const response = await fetch('/api/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? 'Scan request failed');
       setResult(body.result);
