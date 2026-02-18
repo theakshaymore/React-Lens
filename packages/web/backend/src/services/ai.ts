@@ -29,7 +29,13 @@ export class AiServiceError extends Error {
   }
 }
 
-const MODEL_NAME = 'gemini-1.5-flash';
+const MODEL_CANDIDATES = [
+  'gemini-1.5-flash-latest',
+  'models/gemini-1.5-flash',
+  'gemini-2.0-flash-exp',
+  'gemini-1.5-flash',
+] as const;
+const PRIMARY_MODEL = MODEL_CANDIDATES[0];
 
 function normalizeUsage(raw: unknown): GenerationUsage {
   const usage = (raw ?? {}) as {
@@ -61,9 +67,18 @@ function mapProviderError(error: unknown): AiServiceError {
   return new AiServiceError(message, 502, 'UPSTREAM_ERROR');
 }
 
+function isModelNotFoundError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return (
+    message.includes('not found') ||
+    message.includes('404') ||
+    message.includes('is not found for api version')
+  );
+}
+
 export async function generateWithGemini(
   params: GenerationParams,
-): Promise<{ text: string; usage: GenerationUsage }> {
+): Promise<{ text: string; usage: GenerationUsage; model: string }> {
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     throw new AiServiceError('GOOGLE_API_KEY is not configured.', 500, 'MISSING_API_KEY');
@@ -71,25 +86,38 @@ export async function generateWithGemini(
 
   try {
     const client = new GoogleGenerativeAI(apiKey);
-    const model = client.getGenerativeModel({
-      model: MODEL_NAME,
-      ...(params.systemPrompt ? { systemInstruction: params.systemPrompt } : {}),
-    });
+    let lastError: unknown;
+    for (const candidate of MODEL_CANDIDATES) {
+      try {
+        const model = client.getGenerativeModel({
+          model: candidate,
+          ...(params.systemPrompt ? { systemInstruction: params.systemPrompt } : {}),
+        });
 
-    const response = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: params.prompt }] }],
-      generationConfig: {
-        temperature: params.temperature ?? 0.1,
-        maxOutputTokens: params.maxTokens ?? 1200,
-      },
-    });
+        const response = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: params.prompt }] }],
+          generationConfig: {
+            temperature: params.temperature ?? 0.1,
+            maxOutputTokens: params.maxTokens ?? 1200,
+          },
+        });
 
-    const text = response.response.text();
-    if (!text) {
-      throw new AiServiceError('Gemini returned an empty response.', 502, 'EMPTY_RESPONSE');
+        const text = response.response.text();
+        if (!text) {
+          throw new AiServiceError('Gemini returned an empty response.', 502, 'EMPTY_RESPONSE');
+        }
+
+        return { text, usage: normalizeUsage(response.response.usageMetadata), model: candidate };
+      } catch (error) {
+        if (isModelNotFoundError(error)) {
+          lastError = error;
+          continue;
+        }
+        throw error;
+      }
     }
 
-    return { text, usage: normalizeUsage(response.response.usageMetadata) };
+    throw lastError ?? new Error('No compatible Gemini model found.');
   } catch (error) {
     if (error instanceof AiServiceError) throw error;
     throw mapProviderError(error);
@@ -100,7 +128,7 @@ export async function getGeminiFix(
   diagnostic: Diagnostic,
   code: string,
   options?: Omit<GenerationParams, 'prompt'>,
-): Promise<{ suggestion: FixSuggestion; usage: GenerationUsage }> {
+): Promise<{ suggestion: FixSuggestion; usage: GenerationUsage; model: string }> {
   const prompt = [
     'You are fixing React/TypeScript code health issues.',
     `Rule: ${diagnostic.rule}`,
@@ -112,7 +140,7 @@ export async function getGeminiFix(
     code,
   ].join('\n');
 
-  const { text, usage } = await generateWithGemini({
+  const { text, usage, model } = await generateWithGemini({
     prompt,
     systemPrompt: options?.systemPrompt,
     temperature: options?.temperature,
@@ -122,7 +150,7 @@ export async function getGeminiFix(
   try {
     const parsed = JSON.parse(text) as FixSuggestion;
     if (!parsed.explanation || !parsed.fixedCode) throw new Error('Missing expected JSON keys.');
-    return { suggestion: parsed, usage };
+    return { suggestion: parsed, usage, model };
   } catch {
     return {
       suggestion: {
@@ -130,6 +158,7 @@ export async function getGeminiFix(
         fixedCode: text,
       },
       usage,
+      model,
     };
   }
 }
@@ -138,7 +167,7 @@ export function getAiStatus(): { ok: boolean; provider: string; model: string; c
   return {
     ok: true,
     provider: 'google-gemini',
-    model: MODEL_NAME,
+    model: PRIMARY_MODEL,
     configured: Boolean(process.env.GOOGLE_API_KEY),
   };
 }

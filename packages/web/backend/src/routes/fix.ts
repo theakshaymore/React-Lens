@@ -56,6 +56,7 @@ fixRouter.post('/fix', async (req, res) => {
         fixedCode: output.text,
       },
       usage: output.usage,
+      model: output.model,
     });
   } catch (error) {
     if (error instanceof AiServiceError) {
