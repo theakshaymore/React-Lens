@@ -11,7 +11,7 @@ const port = Number(process.env.PORT ?? 8787);
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://react-lens.vercel.app',
+    'react-lenss.vercel.app',
     /\.vercel\.app$/
   ]
 }));
