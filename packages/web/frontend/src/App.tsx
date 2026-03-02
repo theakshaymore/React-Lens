@@ -10,8 +10,8 @@ import type { ScanResult } from './types';
 interface ScanPayload { code?: string; repoUrl?: string; share: boolean; }
 
 export default function App(): ReactElement {
-  const githubUrl = import.meta.env.VITE_GITHUB_URL ?? 'https://github.com/your-username/react-lens';
-  const portfolioUrl = import.meta.env.VITE_PORTFOLIO_URL ?? 'https://your-portfolio.example.com';
+  const githubUrl = import.meta.env.VITE_GITHUB_URL ?? 'https://github.com/theakshaymore/React-Lens';
+  const portfolioUrl = import.meta.env.VITE_PORTFOLIO_URL ?? 'https://akshaymore.com/';
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [shareId, setShareId] = useState<string | null>(null);
